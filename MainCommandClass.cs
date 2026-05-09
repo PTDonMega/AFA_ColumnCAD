@@ -19,7 +19,9 @@ public class StructuralColumnParametersCommand : IExternalCommand
     private const string DEFAULT_AS_VERTICAL = "4f8";
     private const string DEFAULT_AS_ESTRIBO = "f6//0.125";
     private const string SHARED_PARAM_FILE = "StructuralColumnParams.txt";
+    private const string SHARED_PARAM_GROUP_NAME = "Armadura";
     private const string SCHEDULE_NAME = "Quadro de Pilares";
+    private static readonly ForgeTypeId REINFORCEMENT_GROUP_TYPE_ID = ResolveReinforcementGroupTypeId();
 
     public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
     {
@@ -131,10 +133,10 @@ public class StructuralColumnParametersCommand : IExternalCommand
             if (defFile == null)
                 throw new Exception("Não foi possível abrir o ficheiro de parâmetros partilhados.");
 
-            DefinitionGroup group = defFile.Groups.get_Item("Armaduras Estruturais");
+            DefinitionGroup group = defFile.Groups.get_Item(SHARED_PARAM_GROUP_NAME);
             if (group == null)
             {
-                group = defFile.Groups.Create("Armaduras Estruturais");
+                group = defFile.Groups.Create(SHARED_PARAM_GROUP_NAME);
             }
 
             Definition asVerticalDef = group.Definitions.get_Item(AS_VERTICAL_PARAM);
@@ -162,18 +164,17 @@ public class StructuralColumnParametersCommand : IExternalCommand
 
             InstanceBinding binding = app.Create.NewInstanceBinding(categorySet);
             BindingMap bindingMap = doc.ParameterBindings;
-
             if (!bindingMap.Contains(asVerticalDef))
             {
-                bindingMap.Insert(asVerticalDef, binding, GroupTypeId.Structural);
+                bindingMap.Insert(asVerticalDef, binding, REINFORCEMENT_GROUP_TYPE_ID);
             }
             if (!bindingMap.Contains(asEstriboDef))
             {
-                bindingMap.Insert(asEstriboDef, binding, GroupTypeId.Structural);
+                bindingMap.Insert(asEstriboDef, binding, REINFORCEMENT_GROUP_TYPE_ID);
             }
             if (!bindingMap.Contains(asEstriboAdicionalDef))
             {
-                bindingMap.Insert(asEstriboAdicionalDef, binding, GroupTypeId.Structural);
+                bindingMap.Insert(asEstriboAdicionalDef, binding, REINFORCEMENT_GROUP_TYPE_ID);
             }
         }
         catch (Exception ex)
@@ -197,7 +198,7 @@ public class StructuralColumnParametersCommand : IExternalCommand
                 writer.WriteLine("*META\tVERSION\tMINVERSION");
                 writer.WriteLine("META\t2\t1");
                 writer.WriteLine("*GROUP\tID\tNAME");
-                writer.WriteLine("GROUP\t1\tArmaduras Estruturais");
+                writer.WriteLine($"GROUP\t1\t{SHARED_PARAM_GROUP_NAME}");
                 writer.WriteLine("*PARAM\tGUID\tNAME\tDATATYPE\tDATACATEGORY\tGROUP\tVISIBLE\tDESCRIPTION\tUSERMODIFIABLE");
                 writer.WriteLine($"PARAM\t{{{Guid.NewGuid()}}}\t{AS_VERTICAL_PARAM}\tTEXT\t\t1\t1\tArmadura vertical do pilar\t1");
                 writer.WriteLine($"PARAM\t{{{Guid.NewGuid()}}}\t{AS_ESTRIBO_PARAM}\tTEXT\t\t1\t1\tArmadura transversal (estribos) do pilar\t1");
@@ -206,6 +207,20 @@ public class StructuralColumnParametersCommand : IExternalCommand
         }
 
         return sharedParamFilePath;
+    }
+
+    // Obter grupo de parâmetros para armaduras (com fallback para estrutural)
+    private static ForgeTypeId ResolveReinforcementGroupTypeId()
+    {
+        var rebarProperty = typeof(GroupTypeId).GetProperty("Rebar");
+        if (rebarProperty?.GetValue(null) is ForgeTypeId rebarGroup)
+            return rebarGroup;
+
+        var reinforcementProperty = typeof(GroupTypeId).GetProperty("Reinforcement");
+        if (reinforcementProperty?.GetValue(null) is ForgeTypeId reinforcementGroup)
+            return reinforcementGroup;
+
+        return GroupTypeId.Structural;
     }
 
     // Definir valores predefinidos para os parâmetros (apenas betão, ao nível do tipo)
