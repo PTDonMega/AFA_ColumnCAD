@@ -21,6 +21,7 @@ public class StructuralColumnParametersCommand : IExternalCommand
     private const string SHARED_PARAM_FILE = "StructuralColumnParams.txt";
     private const string SHARED_PARAM_GROUP_NAME = "Armadura";
     private const string SCHEDULE_NAME = "Quadro de Pilares";
+    private static readonly ForgeTypeId REINFORCEMENT_GROUP_TYPE_ID = ResolveReinforcementGroupTypeId();
 
     public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
     {
@@ -163,19 +164,17 @@ public class StructuralColumnParametersCommand : IExternalCommand
 
             InstanceBinding binding = app.Create.NewInstanceBinding(categorySet);
             BindingMap bindingMap = doc.ParameterBindings;
-            ForgeTypeId parameterGroupTypeId = GetReinforcementGroupTypeId();
-
             if (!bindingMap.Contains(asVerticalDef))
             {
-                bindingMap.Insert(asVerticalDef, binding, parameterGroupTypeId);
+                bindingMap.Insert(asVerticalDef, binding, REINFORCEMENT_GROUP_TYPE_ID);
             }
             if (!bindingMap.Contains(asEstriboDef))
             {
-                bindingMap.Insert(asEstriboDef, binding, parameterGroupTypeId);
+                bindingMap.Insert(asEstriboDef, binding, REINFORCEMENT_GROUP_TYPE_ID);
             }
             if (!bindingMap.Contains(asEstriboAdicionalDef))
             {
-                bindingMap.Insert(asEstriboAdicionalDef, binding, parameterGroupTypeId);
+                bindingMap.Insert(asEstriboAdicionalDef, binding, REINFORCEMENT_GROUP_TYPE_ID);
             }
         }
         catch (Exception ex)
@@ -211,7 +210,7 @@ public class StructuralColumnParametersCommand : IExternalCommand
     }
 
     // Obter grupo de parâmetros para armaduras (com fallback para estrutural)
-    private ForgeTypeId GetReinforcementGroupTypeId()
+    private static ForgeTypeId ResolveReinforcementGroupTypeId()
     {
         var rebarProperty = typeof(GroupTypeId).GetProperty("Rebar");
         if (rebarProperty?.GetValue(null) is ForgeTypeId rebarGroup)
