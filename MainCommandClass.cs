@@ -15,6 +15,7 @@ public class StructuralColumnParametersCommand : IExternalCommand
 {
     private const string AS_VERTICAL_PARAM = "As_vertical";
     private const string AS_ESTRIBO_PARAM = "As_estribo";
+    private const string ESTRIBO_ADICIONAL_PARAM = "Estribo_Adicional";
     private const string DEFAULT_AS_VERTICAL = "4f8";
     private const string DEFAULT_AS_ESTRIBO = "f6//0.125";
     private const string SHARED_PARAM_FILE = "StructuralColumnParams.txt";
@@ -110,7 +111,8 @@ public class StructuralColumnParametersCommand : IExternalCommand
                 continue;
             Parameter asVerticalParam = symbol.LookupParameter(AS_VERTICAL_PARAM);
             Parameter asEstriboParam = symbol.LookupParameter(AS_ESTRIBO_PARAM);
-            if (asVerticalParam == null || asEstriboParam == null)
+            Parameter asEstriboAdicionalParam = symbol.LookupParameter(ESTRIBO_ADICIONAL_PARAM);
+            if (asVerticalParam == null || asEstriboParam == null || asEstriboAdicionalParam == null)
             {
                 columnsWithoutParams.Add(column);
             }
@@ -147,6 +149,12 @@ public class StructuralColumnParametersCommand : IExternalCommand
                 ExternalDefinitionCreationOptions opt = new ExternalDefinitionCreationOptions(AS_ESTRIBO_PARAM, SpecTypeId.String.Text);
                 asEstriboDef = group.Definitions.Create(opt);
             }
+            Definition asEstriboAdicionalDef = group.Definitions.get_Item(ESTRIBO_ADICIONAL_PARAM);
+            if (asEstriboAdicionalDef == null)
+            {
+                ExternalDefinitionCreationOptions opt = new ExternalDefinitionCreationOptions(ESTRIBO_ADICIONAL_PARAM, SpecTypeId.String.Text);
+                asEstriboAdicionalDef = group.Definitions.Create(opt);
+            }
 
             CategorySet categorySet = app.Create.NewCategorySet();
             Category structuralColumnCategory = doc.Settings.Categories.get_Item(BuiltInCategory.OST_StructuralColumns);
@@ -162,6 +170,10 @@ public class StructuralColumnParametersCommand : IExternalCommand
             if (!bindingMap.Contains(asEstriboDef))
             {
                 bindingMap.Insert(asEstriboDef, binding, GroupTypeId.Structural);
+            }
+            if (!bindingMap.Contains(asEstriboAdicionalDef))
+            {
+                bindingMap.Insert(asEstriboAdicionalDef, binding, GroupTypeId.Structural);
             }
         }
         catch (Exception ex)
@@ -189,6 +201,7 @@ public class StructuralColumnParametersCommand : IExternalCommand
                 writer.WriteLine("*PARAM\tGUID\tNAME\tDATATYPE\tDATACATEGORY\tGROUP\tVISIBLE\tDESCRIPTION\tUSERMODIFIABLE");
                 writer.WriteLine($"PARAM\t{{{Guid.NewGuid()}}}\t{AS_VERTICAL_PARAM}\tTEXT\t\t1\t1\tArmadura vertical do pilar\t1");
                 writer.WriteLine($"PARAM\t{{{Guid.NewGuid()}}}\t{AS_ESTRIBO_PARAM}\tTEXT\t\t1\t1\tArmadura transversal (estribos) do pilar\t1");
+                writer.WriteLine($"PARAM\t{{{Guid.NewGuid()}}}\t{ESTRIBO_ADICIONAL_PARAM}\tTEXT\t\t1\t1\tEstribo adicional do pilar\t1");
             }
         }
 
@@ -252,11 +265,13 @@ public class StructuralColumnParametersCommand : IExternalCommand
     {
         public bool Equals(FamilySymbol x, FamilySymbol y)
         {
-            return x?.Id?.IntegerValue == y?.Id?.IntegerValue;
+            if (x == null && y == null) return true;
+            if (x == null || y == null) return false;
+            return x.Id == y.Id;
         }
         public int GetHashCode(FamilySymbol obj)
         {
-            return obj.Id.IntegerValue;
+            return obj.Id.GetHashCode();
         }
     }
 
@@ -359,6 +374,15 @@ public class StructuralColumnParametersCommand : IExternalCommand
             {
                 ScheduleField field = definition.AddField(asEstriboField);
                 field.ColumnHeading = "As_estribo";
+            }
+
+            // 5. Estribo_Adicional (aparece sempre na tabela)
+            var asEstriboAdicionalField = schedulableFields.FirstOrDefault(f =>
+                f.GetName(doc) == ESTRIBO_ADICIONAL_PARAM);
+            if (asEstriboAdicionalField != null)
+            {
+                ScheduleField field = definition.AddField(asEstriboAdicionalField);
+                field.ColumnHeading = "Estribo_Adicional";
             }
         }
         catch (Exception ex)
