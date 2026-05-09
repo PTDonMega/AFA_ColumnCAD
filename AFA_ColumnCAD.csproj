@@ -16,18 +16,18 @@
 
 	<ItemGroup>
 		<Reference Include="RevitAPI">
-			<HintPath>C:\Program Files\Autodesk\Revit 2025\RevitAPI.dll</HintPath>
+			<HintPath>C:\Program Files\Autodesk\Revit 2026\RevitAPI.dll</HintPath>
 			<Private>False</Private>
 		</Reference>
 		<Reference Include="RevitAPIUI">
-			<HintPath>C:\Program Files\Autodesk\Revit 2025\RevitAPIUI.dll</HintPath>
+			<HintPath>C:\Program Files\Autodesk\Revit 2026\RevitAPIUI.dll</HintPath>
 			<Private>False</Private>
 		</Reference>
 	</ItemGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
 		<StartAction>Program</StartAction>
-		<StartProgram>C:\Program Files\Autodesk\Revit 2025\Revit.exe</StartProgram>
+		<StartProgram>C:\Program Files\Autodesk\Revit 2026\Revit.exe</StartProgram>
 	</PropertyGroup>
 
 </Project>

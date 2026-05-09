@@ -20,7 +20,7 @@ public static class ColumnParameterHelper
 
         // Verificar se é um pilar estrutural
         return column.StructuralType == StructuralType.Column &&
-               column.Category?.Id?.Value == (int)BuiltInCategory.OST_StructuralColumns;
+               column.Category?.Id?.Value == (long)BuiltInCategory.OST_StructuralColumns;
     }
 
     /// <summary>
