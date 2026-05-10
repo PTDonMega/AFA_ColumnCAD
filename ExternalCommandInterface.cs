@@ -1,30 +1,34 @@
-﻿using Autodesk.Revit.Attributes;
+using Autodesk.Revit.Attributes;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using System;
 
-/// <summary>
-/// Comando externo para adicionar parâmetros de armadura aos pilares estruturais
-/// Verifica todos os pilares individualmente e adiciona parâmetros apenas aos que não os possuem
-/// </summary>
-[Transaction(TransactionMode.Manual)]
-[Regeneration(RegenerationOption.Manual)]
-public class AddColumnReinforcementParameters : IExternalCommand
+namespace AFA_ColumnCAD
 {
-    public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
+    /// <summary>
+    /// Comando externo para adicionar parâmetros de armadura aos pilares estruturais.
+    /// Esta classe serve como ponto de entrada alternativo que delega a lógica para StructuralColumnParametersCommand.
+    /// </summary>
+    [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
+    public class AddColumnReinforcementParameters : IExternalCommand
     {
-        try
+        /// <summary>
+        /// Executa o comando de adição de parâmetros de armadura.
+        /// </summary>
+        public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
         {
-            // Criar instância do comando principal
-            StructuralColumnParametersCommand command = new StructuralColumnParametersCommand();
-
-            // Executar o comando
-            return command.Execute(commandData, ref message, elements);
-        }
-        catch (System.Exception ex)
-        {
-            message = $"Erro inesperado: {ex.Message}";
-            return Result.Failed;
+            try
+            {
+                // Criar instância do comando principal e executar
+                StructuralColumnParametersCommand command = new StructuralColumnParametersCommand();
+                return command.Execute(commandData, ref message, elements);
+            }
+            catch (Exception ex)
+            {
+                message = $"Erro inesperado no comando AddColumnReinforcementParameters: {ex.Message}";
+                return Result.Failed;
+            }
         }
     }
 }
