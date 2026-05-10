@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 
 // Classe principal para adicionar parâmetros de armadura a pilares estruturais
 [Transaction(TransactionMode.Manual)]
@@ -21,6 +22,7 @@ public class StructuralColumnParametersCommand : IExternalCommand
     private const string SHARED_PARAM_FILE = "StructuralColumnParams.txt";
     private const string SHARED_PARAM_GROUP_NAME = "Armadura";
     private const string SCHEDULE_NAME = "Quadro de Pilares";
+    private static readonly string[] REINFORCEMENT_GROUP_LABEL_KEYWORDS = { "armadura", "reinforcement", "rebar" };
     private static readonly ForgeTypeId REINFORCEMENT_GROUP_TYPE_ID = ResolveReinforcementGroupTypeId();
 
     public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
@@ -164,23 +166,25 @@ public class StructuralColumnParametersCommand : IExternalCommand
 
             InstanceBinding binding = app.Create.NewInstanceBinding(categorySet);
             BindingMap bindingMap = doc.ParameterBindings;
-            if (!bindingMap.Contains(asVerticalDef))
-            {
-                bindingMap.Insert(asVerticalDef, binding, REINFORCEMENT_GROUP_TYPE_ID);
-            }
-            if (!bindingMap.Contains(asEstriboDef))
-            {
-                bindingMap.Insert(asEstriboDef, binding, REINFORCEMENT_GROUP_TYPE_ID);
-            }
-            if (!bindingMap.Contains(asEstriboAdicionalDef))
-            {
-                bindingMap.Insert(asEstriboAdicionalDef, binding, REINFORCEMENT_GROUP_TYPE_ID);
-            }
+            BindOrRebindParameter(bindingMap, asVerticalDef, binding);
+            BindOrRebindParameter(bindingMap, asEstriboDef, binding);
+            BindOrRebindParameter(bindingMap, asEstriboAdicionalDef, binding);
         }
         catch (Exception ex)
         {
             throw new Exception($"Erro ao garantir que os parâmetros partilhados existem: {ex.Message}");
         }
+    }
+
+    private static void BindOrRebindParameter(BindingMap bindingMap, Definition definition, InstanceBinding binding)
+    {
+        if (bindingMap.Contains(definition))
+        {
+            bindingMap.ReInsert(definition, binding, REINFORCEMENT_GROUP_TYPE_ID);
+            return;
+        }
+
+        bindingMap.Insert(definition, binding, REINFORCEMENT_GROUP_TYPE_ID);
     }
 
     // Criar ficheiro de parâmetros partilhados se não existir
@@ -219,6 +223,17 @@ public class StructuralColumnParametersCommand : IExternalCommand
         var reinforcementProperty = typeof(GroupTypeId).GetProperty("Reinforcement");
         if (reinforcementProperty?.GetValue(null) is ForgeTypeId reinforcementGroup)
             return reinforcementGroup;
+
+        var allGroupsMethod = typeof(ParameterUtils).GetMethod("GetAllBuiltInGroups", BindingFlags.Public | BindingFlags.Static);
+        if (allGroupsMethod?.Invoke(null, null) is IEnumerable<ForgeTypeId> groups)
+        {
+            foreach (var group in groups)
+            {
+                string label = LabelUtils.GetLabelForGroup(group)?.ToLowerInvariant() ?? string.Empty;
+                if (REINFORCEMENT_GROUP_LABEL_KEYWORDS.Any(keyword => label.Contains(keyword)))
+                    return group;
+            }
+        }
 
         return GroupTypeId.Structural;
     }
