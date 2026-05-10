@@ -456,6 +456,7 @@ namespace AFA_ColumnCAD
                 schedule.Name = SCHEDULE_NAME;
 
                 ScheduleDefinition definition = schedule.Definition;
+                definition.IsItemized = false;
 
                 AddScheduleFields(definition, doc);
                 AddScheduleFilters(definition);
@@ -465,6 +466,18 @@ namespace AFA_ColumnCAD
                     ScheduleSortGroupField sortField = new ScheduleSortGroupField(definition.GetFieldId(0));
                     sortField.ShowHeader = false;
                     definition.AddSortGroupField(sortField);
+
+                    for (int i = 0; i < definition.GetFieldCount(); i++)
+                    {
+                        ScheduleField field = definition.GetField(definition.GetFieldId(i));
+                        if (field.ColumnHeading == "Nível Superior" || field.ColumnHeading == "Top Level")
+                        {
+                            ScheduleSortGroupField sortTopLevel = new ScheduleSortGroupField(field.FieldId);
+                            sortTopLevel.ShowHeader = false;
+                            definition.AddSortGroupField(sortTopLevel);
+                            break;
+                        }
+                    }
                 }
             }
             catch (Exception ex)
@@ -485,7 +498,7 @@ namespace AFA_ColumnCAD
                 // 1. Designação
                 var markField = schedulableFields.FirstOrDefault(f =>
                     f.GetName(doc) == "Designacao");
-                if (markField = null)
+                if (markField == null)
                 {
                     throw new Exception("Não existem elementos com parametro 'Designacao' para filtrar na Schedule.");
                 }
