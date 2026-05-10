@@ -22,6 +22,7 @@ public class StructuralColumnParametersCommand : IExternalCommand
     private const string SHARED_PARAM_FILE = "StructuralColumnParams.txt";
     private const string SHARED_PARAM_GROUP_NAME = "Armadura";
     private const string SCHEDULE_NAME = "Quadro de Pilares";
+    private static readonly string[] REINFORCEMENT_GROUP_LABEL_KEYWORDS = { "armadura", "reinforcement", "rebar" };
     private static readonly ForgeTypeId REINFORCEMENT_GROUP_TYPE_ID = ResolveReinforcementGroupTypeId();
 
     public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
@@ -229,7 +230,7 @@ public class StructuralColumnParametersCommand : IExternalCommand
             foreach (var group in groups)
             {
                 string label = LabelUtils.GetLabelForGroup(group)?.ToLowerInvariant() ?? string.Empty;
-                if (label.Contains("armadura") || label.Contains("reinforcement") || label.Contains("rebar"))
+                if (REINFORCEMENT_GROUP_LABEL_KEYWORDS.Any(keyword => label.Contains(keyword)))
                     return group;
             }
         }
