@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 
 // Classe principal para adicionar parâmetros de armadura a pilares estruturais
 [Transaction(TransactionMode.Manual)]
@@ -164,23 +165,25 @@ public class StructuralColumnParametersCommand : IExternalCommand
 
             InstanceBinding binding = app.Create.NewInstanceBinding(categorySet);
             BindingMap bindingMap = doc.ParameterBindings;
-            if (!bindingMap.Contains(asVerticalDef))
-            {
-                bindingMap.Insert(asVerticalDef, binding, REINFORCEMENT_GROUP_TYPE_ID);
-            }
-            if (!bindingMap.Contains(asEstriboDef))
-            {
-                bindingMap.Insert(asEstriboDef, binding, REINFORCEMENT_GROUP_TYPE_ID);
-            }
-            if (!bindingMap.Contains(asEstriboAdicionalDef))
-            {
-                bindingMap.Insert(asEstriboAdicionalDef, binding, REINFORCEMENT_GROUP_TYPE_ID);
-            }
+            BindOrRebindParameter(bindingMap, asVerticalDef, binding);
+            BindOrRebindParameter(bindingMap, asEstriboDef, binding);
+            BindOrRebindParameter(bindingMap, asEstriboAdicionalDef, binding);
         }
         catch (Exception ex)
         {
             throw new Exception($"Erro ao garantir que os parâmetros partilhados existem: {ex.Message}");
         }
+    }
+
+    private static void BindOrRebindParameter(BindingMap bindingMap, Definition definition, InstanceBinding binding)
+    {
+        if (bindingMap.Contains(definition))
+        {
+            bindingMap.ReInsert(definition, binding, REINFORCEMENT_GROUP_TYPE_ID);
+            return;
+        }
+
+        bindingMap.Insert(definition, binding, REINFORCEMENT_GROUP_TYPE_ID);
     }
 
     // Criar ficheiro de parâmetros partilhados se não existir
@@ -219,6 +222,17 @@ public class StructuralColumnParametersCommand : IExternalCommand
         var reinforcementProperty = typeof(GroupTypeId).GetProperty("Reinforcement");
         if (reinforcementProperty?.GetValue(null) is ForgeTypeId reinforcementGroup)
             return reinforcementGroup;
+
+        var allGroupsMethod = typeof(ParameterUtils).GetMethod("GetAllBuiltInGroups", BindingFlags.Public | BindingFlags.Static);
+        if (allGroupsMethod?.Invoke(null, null) is IEnumerable<ForgeTypeId> groups)
+        {
+            foreach (var group in groups)
+            {
+                string label = LabelUtils.GetLabelForGroup(group)?.ToLowerInvariant() ?? string.Empty;
+                if (label.Contains("armadura") || label.Contains("reinforcement") || label.Contains("rebar"))
+                    return group;
+            }
+        }
 
         return GroupTypeId.Structural;
     }
